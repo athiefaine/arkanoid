@@ -74,6 +74,7 @@ Tourne à 60 fps (`clock.tick(60)`). Ordre d'exécution par frame :
 - Pas de gestion d'erreur sur les chemins internes (faire confiance à pygame)
 - **Mettre à jour `docs/journal.md` à chaque session de travail significative** — résumé des changements, décisions prises, points ouverts
 - **Mettre à jour `docs/todo.md`** quand une tâche est ajoutée, commencée ou terminée
+- **Mettre à jour `README.md`** si la structure, les commandes ou les fonctionnalités changent
 
 ## Directives graphiques
 

@@ -3,6 +3,7 @@ import pygame
 from game.domain.entities import Ball, Paddle, BrickWall
 from game.graphics.renderer import Renderer, BRICK_COLORS
 from game.input.handler import InputHandler
+from game.audio.player import AudioPlayer
 
 # "grid" | "trench"
 BACKGROUND = "grid"
@@ -14,6 +15,8 @@ def main(background=BACKGROUND):
 
     renderer = Renderer(screen, background)
     input_handler = InputHandler()
+    audio = AudioPlayer()
+    audio.play()
 
     brick_group = BrickWall(0, 100, 20, 5, BRICK_COLORS)
     paddle = Paddle(100, 12, 350, 645)
@@ -30,6 +33,7 @@ def main(background=BACKGROUND):
         input_handler.process()
         if input_handler.toggle_pause:
             paused = not paused
+            audio.toggle_pause()
 
         if paused:
             clock.tick(60)

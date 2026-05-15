@@ -13,15 +13,6 @@
 - Correction du bug latent `Paddle` (majuscule) vs `paddle` dans `Ball.update()` — le paramètre référençait l'ancienne variable globale
 - Suppression du `print()` de debug dans la boucle de rendu de `arkadoid.py`
 
-### État du projet
-
-Deux variantes du jeu coexistent :
-
-- `arkadoid.py` (`poetry run play-base`) — fond diagonal expérimental avec effet de perspective (`math.sin`), logique de collision simple
-- `arkadoid_diag_scroll.py` (`poetry run play`) — fond grille avec défilement horizontal lié à la raquette, logique de collision améliorée (`_collisionState` anti-doublon)
-
-**Attention** : le nommage est contre-intuitif — c'est `arkadoid.py` qui contient l'effet diagonal, pas `arkadoid_diag_scroll.py`.
-
 ### Incident — inversion des fichiers par Claude
 
 Lors de la refactorisation pour ajouter `main()`, Claude a réécrit les deux fichiers entièrement (`Write`) et a **interverti leur contenu** en faisant une inférence sur les noms de fichiers plutôt qu'en restant fidèle aux sources lues.
@@ -30,9 +21,42 @@ Cause : quand un LLM réécrit un fichier en entier, il peut laisser ses supposi
 
 **La vigilance de l'humain reste indispensable** — en particulier lors des réécritures complètes de fichiers, des renommages ou de toute opération sans diff partiel facilement vérifiable.
 
+---
+
+- Fusion des deux fichiers en un seul `arkadoid.py` avec background configurable
+- Backgrounds renommés : `"grid"` (défaut) et `"trench"` (ex-`diag_scroll`)
+- Commandes : `poetry run play` (grid) et `poetry run play-trench`
+- Pause toggle sur la touche espace
+- Raquette redessinée : forme capsule, effet métallique (gradient + arête + reflet)
+- Création du `.gitignore` et nettoyage des `__pycache__`
+- Séparation logique métier / affichage / input :
+  - `domain/entities.py` — Ball, Paddle, Brick, BrickGroup, BrickWall — zéro import pygame
+  - `graphics/renderer.py` — Renderer, méthodes draw_*, backgrounds, BRICK_COLORS
+  - `input/handler.py` — InputHandler
+  - `arkadoid.py` — boucle principale ~50 lignes
+- `BRICK_COLORS` déplacé de `domain` vers `graphics` (décision d'affichage, pas métier)
+- `_vanishingStep` incrémenté dans `Brick.update()` au lieu de `draw()` (logique découplée du rendu)
+
+- Ajout du système audio procédural (`audio/`) : `synth.py` (oscillateurs + ADSR), `composer.py` (basse sawtooth + arp square + pad sine avec vibrato), `player.py` (AudioPlayer)
+- Progression harmonique : Am → F → C → G, 110 BPM, boucle seamless
+- Pause musicale synchronisée avec la pause jeu (touche espace) — cohérence UX notée positivement
+- Dépendance `numpy` ajoutée
+
+### État du projet
+
+Fichier unique `src/game/arkadoid.py` orchestrant trois packages :
+
+```
+domain/entities.py     ← logique pure, pas de pygame
+graphics/renderer.py   ← tout le rendu
+input/handler.py       ← événements clavier
+audio/synth.py         ← oscillateurs + ADSR (numpy pur)
+audio/composer.py      ← composition de la boucle musicale
+audio/player.py        ← lecture via pygame.mixer
+```
+
 ### Points ouverts
 
 - Collisions latérales des briques non gérées (TODO dans le code)
 - La raquette suit automatiquement la balle (mode démo) — pas encore de contrôle joueur
 - Le mur se régénère uniquement quand toutes les briques sont détruites **et** que la balle est en bas (`yLoc > 600`) — comportement à revoir
-- `self.__screen` stocké dans chaque `__init__` mais jamais utilisé (le dessin passe par le global `screen`) — à nettoyer

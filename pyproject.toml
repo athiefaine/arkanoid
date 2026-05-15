@@ -1,0 +1,23 @@
+[project]
+name = "arkanoid"
+version = "0.1.0"
+description = "Arkanoid game in Python"
+authors = [
+    {name = "athiefaine"}
+]
+requires-python = "^3.13"
+dependencies = [
+    "pygame (>=2.6.1,<3.0.0)"
+]
+
+
+[tool.poetry]
+packages = [{include = "game", from = "src"}]
+
+[project.scripts]
+play = "game.arkadoid:main"
+play-trench = "game.arkadoid:main_trench"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

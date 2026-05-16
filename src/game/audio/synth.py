@@ -19,6 +19,24 @@ def square(freq, duration, amplitude=0.5):
     return amplitude * np.sign(np.sin(2 * np.pi * freq * t))
 
 
+def fm(freq, duration, mod_ratio=2.0, mod_index=3.0, amplitude=0.5):
+    """2-operator FM synthesis — simulates YM2612 metallic/aggressive tones."""
+    n = int(SAMPLE_RATE * duration)
+    t = np.arange(n) / SAMPLE_RATE
+    modulator = mod_index * np.sin(2 * np.pi * freq * mod_ratio * t)
+    return amplitude * np.sin(2 * np.pi * freq * t + modulator)
+
+
+def overdrive(signal, gain=3.0):
+    """Hard clipping — simulates the YM2612 DAC saturation."""
+    return np.clip(signal * gain, -1.0, 1.0)
+
+
+def noise(duration, amplitude=0.5):
+    n = int(SAMPLE_RATE * duration)
+    return amplitude * (np.random.random(n) * 2 - 1)
+
+
 def adsr(signal, attack=0.01, decay=0.1, sustain=0.7, release=0.1):
     n = len(signal)
     env = np.ones(n) * sustain

@@ -8,6 +8,12 @@ from game.audio.player import AudioPlayer
 # "grid" | "trench"
 BACKGROUND = "grid"
 
+# "megadrive" | "megadrive_fierce" | "synthwave"
+SYNTH_PROFILE = "synthwave"
+
+# "shmup" | "hunger_desperate" | "ambient"
+COMPOSE_PROFILE = "shmup_pressure"
+
 
 def main(background=BACKGROUND):
     pygame.init()
@@ -15,7 +21,7 @@ def main(background=BACKGROUND):
 
     renderer = Renderer(screen, background)
     input_handler = InputHandler()
-    audio = AudioPlayer()
+    audio = AudioPlayer(synth=SYNTH_PROFILE, compose=COMPOSE_PROFILE)
     audio.play()
 
     brick_group = BrickWall(0, 100, 20, 5, BRICK_COLORS)

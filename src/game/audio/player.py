@@ -4,9 +4,9 @@ from game.audio.composer import build_loop
 
 
 class AudioPlayer:
-    def __init__(self):
+    def __init__(self, synth="megadrive", compose="thunderforce"):
         pygame.mixer.init(frequency=SAMPLE_RATE, size=-16, channels=2, buffer=512)
-        self._sound = pygame.sndarray.make_sound(build_loop())
+        self._sound = pygame.sndarray.make_sound(build_loop(synth, compose))
         self._paused = False
 
     def play(self):

@@ -37,22 +37,25 @@ Cause : quand un LLM réécrit un fichier en entier, il peut laisser ses supposi
 - `BRICK_COLORS` déplacé de `domain` vers `graphics` (décision d'affichage, pas métier)
 - `_vanishingStep` incrémenté dans `Brick.update()` au lieu de `draw()` (logique découplée du rendu)
 
-- Ajout du système audio procédural (`audio/`) : `synth.py` (oscillateurs + ADSR), `composer.py` (basse sawtooth + arp square + pad sine avec vibrato), `player.py` (AudioPlayer)
-- Progression harmonique : Am → F → C → G, 110 BPM, boucle seamless
-- Pause musicale synchronisée avec la pause jeu (touche espace) — cohérence UX notée positivement
+- Ajout du système audio procédural (`audio/`) : `synth.py` (oscillateurs + ADSR + FM + overdrive), boucle seamless, pause synchronisée avec le jeu — cohérence UX notée positivement
 - Dépendance `numpy` ajoutée
+- Refonte musicale style Thunderforce 3 (Mega Drive) : FM synthesis 2 opérateurs, overdrive, kick + hihat procéduraux, 160 BPM, Ré mineur
+- Architecture profiles : `audio/profiles/synth_profiles.py` (comment ça sonne) et `audio/profiles/compose_profiles.py` (ce qui est joué) — deux axes orthogonaux configurables indépendamment
+- Profiles disponibles : synth `"megadrive"` / `"synthwave"`, compose `"thunderforce"` / `"ambient"` (Am→F→C→G 110 BPM)
 
 ### État du projet
 
 Fichier unique `src/game/arkadoid.py` orchestrant trois packages :
 
 ```
-domain/entities.py     ← logique pure, pas de pygame
-graphics/renderer.py   ← tout le rendu
-input/handler.py       ← événements clavier
-audio/synth.py         ← oscillateurs + ADSR (numpy pur)
-audio/composer.py      ← composition de la boucle musicale
-audio/player.py        ← lecture via pygame.mixer
+domain/entities.py              ← logique pure, pas de pygame
+graphics/renderer.py            ← tout le rendu
+input/handler.py                ← événements clavier
+audio/synth.py                  ← oscillateurs + ADSR + FM (numpy pur)
+audio/composer.py               ← moteur générique de composition
+audio/player.py                 ← AudioPlayer(synth=, compose=)
+audio/profiles/synth_profiles.py   ← HOW : megadrive, synthwave
+audio/profiles/compose_profiles.py ← WHAT : thunderforce, ambient
 ```
 
 ### Points ouverts

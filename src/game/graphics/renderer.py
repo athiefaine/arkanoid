@@ -22,6 +22,7 @@ class Renderer:
             "grid": self._draw_background_grid,
             "trench": self._draw_background_trench,
         }[background]
+        self._font = pygame.font.Font(None, 28)
 
     def clear(self):
         self._screen.fill(BLACK)
@@ -29,6 +30,12 @@ class Renderer:
 
     def flip(self):
         pygame.display.flip()
+
+    def draw_speed(self, multiplier):
+        if multiplier == 1:
+            return
+        surf = self._font.render(f'x{multiplier}', True, (255, 220, 0))
+        self._screen.blit(surf, (810, 10))
 
     def draw_borders(self):
         pygame.draw.rect(self._screen, WHITE, (0, 0, 802, 800), 1)

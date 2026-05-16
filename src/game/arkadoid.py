@@ -35,18 +35,35 @@ def main(background=BACKGROUND):
     h_scroll = 0
     paused = False
 
+    speed_levels = [1, 2, 4, 8, 16]
+    speed_idx = 0
+
     while True:
         input_handler.process()
+
         if input_handler.toggle_pause:
             paused = not paused
             audio.toggle_pause()
+        if input_handler.speed_up:
+            speed_idx = min(speed_idx + 1, len(speed_levels) - 1)
+        if input_handler.speed_down:
+            speed_idx = max(speed_idx - 1, 0)
 
         if paused:
             clock.tick(60)
             continue
 
-        if not brick_group._bricks and ball._yLoc > 600:
-            brick_group = BrickWall(0, 100, 20, 5, BRICK_COLORS)
+        speed = speed_levels[speed_idx]
+
+        for _ in range(speed):
+            if not brick_group._bricks and ball._yLoc > 600:
+                brick_group = BrickWall(0, 100, 20, 5, BRICK_COLORS)
+                break
+            prev_x = paddle._xLoc
+            ball.update(brick_group, paddle)
+            paddle.update(ball)
+            h_scroll += (paddle._xLoc - prev_x) / -8
+            brick_group.update()
 
         glow += glow_direction
         if glow > 30 or glow < 0:
@@ -58,12 +75,7 @@ def main(background=BACKGROUND):
         renderer.draw_ball(ball)
         renderer.draw_paddle(paddle)
         renderer.draw_borders()
-
-        prev_x = paddle._xLoc
-        ball.update(brick_group, paddle)
-        paddle.update(ball)
-        h_scroll += (paddle._xLoc - prev_x) / -8
-        brick_group.update()
+        renderer.draw_speed(speed)
 
         renderer.flip()
         clock.tick(60)

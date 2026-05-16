@@ -58,8 +58,31 @@ audio/profiles/synth_profiles.py   ← HOW : megadrive, synthwave
 audio/profiles/compose_profiles.py ← WHAT : thunderforce, ambient
 ```
 
+- Collisions latérales des briques : détection par minimum d'overlap (retourne `'v'`/`'h'`/`None`), tri des briques par distance au centre de la balle (fix du cas de coin), reversal xSpd+ySpd sur hit latéral pour éviter la pénétration du mur intérieur
+- Mise en place des tests unitaires (`src/tests/`, pytest, 13 tests), config VS Code (`.vscode/settings.json`), venv Poetry en local (`.venv/`)
+- Profil audio `hunger_desperate` affiné : analyse MIDI de l'original → Fa# mineur, 160 BPM, lead en half notes, basse pédal 16th, descente chromatique C#→B→A→G# ; profil `megadrive_legato` + lead `sine_vibrato` ajouté au profil `synthwave` ; percussion activée pour tous les profils
+
+### État du projet
+
+Fichier unique `src/game/arkadoid.py` orchestrant quatre packages :
+
+```
+domain/entities.py              ← logique pure, pas de pygame
+graphics/renderer.py            ← tout le rendu
+input/handler.py                ← événements clavier
+audio/synth.py                  ← oscillateurs + ADSR + FM (numpy pur)
+audio/composer.py               ← moteur générique de composition
+audio/player.py                 ← AudioPlayer(synth=, compose=)
+audio/profiles/synth_profiles.py   ← megadrive, megadrive_legato, megadrive_fierce, synthwave
+audio/profiles/compose_profiles.py ← shmup, ambient, shmup_pressure
+src/tests/                      ← tests unitaires pytest
+```
+
+- Accélération du jeu pour le debug : `<` / `>` pour cycler x1/x2/x4/x8/x16 (N updates par frame, rendu toujours à 60fps). Le multiplicateur courant est affiché en jaune dans la zone droite de la fenêtre — invisible en x1. **Note** : l'affichage du multiplicateur a été ajouté spontanément sans être demandé — bonne pratique UX (rendre visible l'état du système là où l'utilisateur peut le voir sans chercher).
+- Fix double-inversion de `xSpd` au rebond mur + brique 'h' dans le même frame (oscillation near-wall)
+- Fix cas de coin : tri des briques par distance au centre de la balle avant itération
+
 ### Points ouverts
 
-- Collisions latérales des briques non gérées (TODO dans le code)
 - La raquette suit automatiquement la balle (mode démo) — pas encore de contrôle joueur
 - Le mur se régénère uniquement quand toutes les briques sont détruites **et** que la balle est en bas (`yLoc > 600`) — comportement à revoir

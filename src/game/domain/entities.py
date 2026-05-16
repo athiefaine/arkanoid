@@ -25,10 +25,17 @@ class Ball:
             self._collisionState = 0
         self._xLoc += self._xSpd
         self._yLoc += self._ySpd
-        if self._xLoc <= self._radius or self._xLoc >= 800 - self._radius:
+        x_wall = self._xLoc <= self._radius or self._xLoc >= 800 - self._radius
+        if x_wall:
             self._xSpd = -self._xSpd
-        if self._yLoc <= self._radius \
-                or brickwall.collide(self) or paddle.collide(self):
+        if self._yLoc <= self._radius or paddle.collide(self):
+            self._ySpd = -self._ySpd
+        brick_col = brickwall.collide(self)
+        if brick_col == 'v':
+            self._ySpd = -self._ySpd
+        elif brick_col == 'h':
+            if not x_wall:  # wall already reversed xSpd this frame — don't cancel it
+                self._xSpd = -self._xSpd
             self._ySpd = -self._ySpd
 
 
@@ -63,16 +70,19 @@ class Brick:
             self._vanishingStep += 1
 
     def collide(self, ball):
-        has_collided = (not ball.get_collision_state()
-                        and (ball._xLoc + ball._radius) >= self._xLoc
-                        and (ball._xLoc - ball._radius) <= (self._xLoc + self._width)
-                        and (ball._yLoc + ball._radius) >= self._yLoc
-                        and (ball._yLoc - ball._radius) <= (self._yLoc + self._height))
-        if has_collided:
-            ball.set_collision_state(1)
-            self._vanishingStep = 1
-        return has_collided
-        # TODO : handle collisions from the side
+        if ball.get_collision_state():
+            return None
+        dx_left  = (ball._xLoc + ball._radius) - self._xLoc
+        dx_right = (self._xLoc + self._width)  - (ball._xLoc - ball._radius)
+        dy_top   = (ball._yLoc + ball._radius) - self._yLoc
+        dy_bottom = (self._yLoc + self._height) - (ball._yLoc - ball._radius)
+        if dx_left <= 0 or dx_right <= 0 or dy_top <= 0 or dy_bottom <= 0:
+            return None
+        ball.set_collision_state(1)
+        self._vanishingStep = 1
+        if min(dx_left, dx_right) < min(dy_top, dy_bottom):
+            return 'h'
+        return 'v'
 
 
 class BrickGroup:
@@ -85,13 +95,17 @@ class BrickGroup:
 
     def collide(self, ball):
         if ball.get_collision_state():
-            return False
-        result = False
-        # todo : sort bricks by distance to ball
-        for brick in self._bricks:
-            if brick.collide(ball):
-                result = True
-        return result
+            return None
+        by_distance = sorted(
+            self._bricks,
+            key=lambda b: (b._xLoc + b._width / 2 - ball._xLoc) ** 2
+                        + (b._yLoc + b._height / 2 - ball._yLoc) ** 2
+        )
+        for brick in by_distance:
+            col = brick.collide(ball)
+            if col is not None:
+                return col
+        return None
 
     def update(self):
         for brick in self._bricks:

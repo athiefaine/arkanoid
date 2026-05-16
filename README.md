@@ -8,15 +8,27 @@ A Python Arkanoid game built with pygame. Graphics and music are 100% procedural
 - Two animated backgrounds: scrolling grid (`grid`) and perspective tunnel (`trench`)
 - Synthwave music generated entirely by code (bass, arpeggio, pad)
 - Pause with music synchronization
+- Gamepad support (axis 0 + button 1)
 - Debug speed control: x1 to x16, current multiplier displayed on screen
 
 ## Controls
 
+### Keyboard
+
 | Key | Action |
 |-----|--------|
-| `Space` | Pause / Resume |
+| `←` / `→` | Move paddle |
+| `Space` | Launch ball |
+| `p` | Pause / Resume |
 | `>` | Speed up (x1 → x2 → x4 → x8 → x16) |
 | `<` | Speed down |
+
+### Gamepad
+
+| Input | Action |
+|-------|--------|
+| Left stick (axis 0) | Move paddle |
+| Button 1 | Launch ball |
 
 ## Getting started
 

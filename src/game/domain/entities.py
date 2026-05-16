@@ -1,6 +1,7 @@
-BALL_SPEED = 8
+BALL_SPEED = 6
 BRICK_WIDTH = 40
 BRICK_HEIGHT = 16
+PADDLE_SPEED = 8
 
 
 class Ball:
@@ -8,9 +9,20 @@ class Ball:
         self._radius = radius
         self._xLoc = x
         self._yLoc = y
-        self._xSpd = BALL_SPEED
-        self._ySpd = -BALL_SPEED
+        self._xSpd = 0
+        self._ySpd = 0
         self._collisionState = 0
+
+    def anchor_to_paddle(self, paddle):
+        self._xLoc = int(paddle._xLoc + paddle._width / 2)
+        self._yLoc = paddle._yLoc - self._radius
+        self._xSpd = 0
+        self._ySpd = 0
+        self._collisionState = 0
+
+    def launch(self, direction_x=1):
+        self._xSpd = BALL_SPEED * (1 if direction_x >= 0 else -1)
+        self._ySpd = -BALL_SPEED
 
     def get_collision_state(self):
         return self._collisionState
@@ -46,8 +58,11 @@ class Paddle:
         self._xLoc = x
         self._yLoc = y
 
-    def update(self, ball):
-        self._xLoc = ball._xLoc - (self._width / 2)
+    def update(self, left, right):
+        if left:
+            self._xLoc = max(0, self._xLoc - PADDLE_SPEED)
+        elif right:
+            self._xLoc = min(800 - self._width, self._xLoc + PADDLE_SPEED)
 
     def collide(self, ball):
         return ((ball._xLoc + ball._radius) >= self._xLoc
@@ -70,7 +85,7 @@ class Brick:
             self._vanishingStep += 1
 
     def collide(self, ball):
-        if ball.get_collision_state():
+        if ball.get_collision_state() or self._vanishingStep > 0:
             return None
         dx_left  = (ball._xLoc + ball._radius) - self._xLoc
         dx_right = (self._xLoc + self._width)  - (ball._xLoc - ball._radius)

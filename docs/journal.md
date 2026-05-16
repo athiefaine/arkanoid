@@ -82,7 +82,64 @@ src/tests/                      ← tests unitaires pytest
 - Fix double-inversion de `xSpd` au rebond mur + brique 'h' dans le même frame (oscillation near-wall)
 - Fix cas de coin : tri des briques par distance au centre de la balle avant itération
 
+- Contrôle joueur : flèches ←/→, espace pour lancer, p pour pause. Machine d'état `idle`/`playing`/`paused`. Balle perdue → reset paddle centre + idle (système de vies/score prévu plus tard). `Paddle.update(left, right)` remplace l'ancien suivi automatique de la balle. Paddle toujours à vitesse humaine (non multiplié par le facteur debug).
+
+---
+
+## 2026-05-16
+
+### Intégration manette — diagnostic complet avec Claude
+
+Objectif : connecter une manette USB-C générique (Padix Co., vendor `0x0583` / product `0x2060`, "2-axis 8-button gamepad") pour contrôler la raquette.
+
+#### Ce qui semblait simple ne l'était pas
+
+La manette était visible dans le Rapport système macOS, mais `pygame.joystick.get_count()` retournait `0`. Les tentatives habituelles (permission *Surveillance des entrées*, `SDL_JOYSTICK_HIDAPI=0`, `SDL_JOYSTICK_MFI=1`) n'ont rien changé.
+
+#### Diagnostic avec Claude
+
+Claude a creusé le registre IOKit :
+
+```
+"GameControllerSupportedHIDDevice" = Yes
+"IOUserServerName" = "com.apple.driverkit.AppleUserHIDDrivers"
+```
+
+Ce flag indique que macOS a revendiqué la manette via son framework Game Controller (GCController). SDL/HIDAPI ne peut pas ouvrir un device exclusivement détenu par un driver système Apple — d'où le silence de pygame, même après les permissions accordées.
+
+Sans ce diagnostic, la piste naturelle aurait été de continuer à chercher du côté des permissions ou des flags SDL, sans jamais trouver.
+
+#### Solution : bypass SDL via hidapi + ctypes
+
+hidapi (déjà installé via Homebrew) peut ouvrir le device en-dessous du framework Apple. On a vérifié d'abord que `hid.Device` pouvait lire des données brutes :
+
+```
+[128, 128, 0, 0, 0, 0, 0, 0]  # axes centrés, aucun bouton
+```
+
+Format du rapport HID :
+- `byte[0]` → axe X (0=gauche, 128=centre, 255=droite)
+- `byte[1]` → axe Y
+- `byte[2]` → bitmask boutons (bit 0 = bouton 1…)
+
+Implémentation : wrapper `ctypes` minimal dans `input/hid_gamepad.py`, chargé via `ctypes.util.find_library('hidapi')` avec fallback sur `/opt/homebrew/lib/libhidapi.dylib`. Aucune nouvelle dépendance Python. `InputHandler` essaie d'abord `pygame.joystick` ; si absent, tente `HidGamepad`.
+
+#### Structure résultante
+
+```
+input/
+  handler.py       ← InputHandler, logique d'input unifiée
+  hid_gamepad.py   ← HidGamepad (ctypes + hidapi), format de rapport Padix
+```
+
+#### Ce que j'aurais pas trouvé seul
+
+- Savoir qu'il faut inspecter IOKit (`ioreg`) pour voir quel driver possède un device HID
+- Comprendre que `GameControllerSupportedHIDDevice = Yes` signifie une capture exclusive par Apple
+- Penser à bypasser SDL entièrement plutôt que de chercher un flag SDL supplémentaire
+- Utiliser `ctypes` directement sur `libhidapi.dylib` pour éviter d'ajouter une dépendance Python
+
 ### Points ouverts
 
-- La raquette suit automatiquement la balle (mode démo) — pas encore de contrôle joueur
-- Le mur se régénère uniquement quand toutes les briques sont détruites **et** que la balle est en bas (`yLoc > 600`) — comportement à revoir
+- Le mur se régénère uniquement quand toutes les briques sont détruites — comportement correct désormais (condition `yLoc > 600` supprimée)
+- Système de vies / score à implémenter (perte de balle déclenche actuellement juste un reset)

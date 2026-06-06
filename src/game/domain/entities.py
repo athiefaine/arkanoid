@@ -20,9 +20,11 @@ class Ball:
         self._ySpd = 0
         self._collisionState = 0
 
-    def launch(self, direction_x=1):
-        self._xSpd = BALL_SPEED * (1 if direction_x >= 0 else -1)
-        self._ySpd = -BALL_SPEED
+    def launch(self, angle_deg=0):
+        import math
+        rad = math.radians(angle_deg)
+        self._xSpd = BALL_SPEED * math.sin(rad)
+        self._ySpd = -BALL_SPEED * math.cos(rad)
 
     def get_collision_state(self):
         return self._collisionState
@@ -40,15 +42,17 @@ class Ball:
         x_wall = self._xLoc <= self._radius or self._xLoc >= 800 - self._radius
         if x_wall:
             self._xSpd = -self._xSpd
-        if self._yLoc <= self._radius or paddle.collide(self):
+        paddle_hit = paddle.collide(self)
+        if self._yLoc <= self._radius or paddle_hit:
             self._ySpd = -self._ySpd
         brick_col = brickwall.collide(self)
         if brick_col == 'v':
             self._ySpd = -self._ySpd
         elif brick_col == 'h':
-            if not x_wall:  # wall already reversed xSpd this frame — don't cancel it
+            if not x_wall:
                 self._xSpd = -self._xSpd
             self._ySpd = -self._ySpd
+        return {'brick_hit': brick_col is not None, 'paddle_hit': bool(paddle_hit)}
 
 
 class Paddle:

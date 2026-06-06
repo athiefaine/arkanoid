@@ -4,6 +4,8 @@ from game.domain.entities import Ball, Paddle, BrickWall
 from game.graphics.renderer import Renderer, BRICK_COLORS
 from game.input.handler import InputHandler
 from game.audio.player import AudioPlayer
+from game.speed import SpeedController
+from game.domain.scoring import ScoreTracker
 
 # "grid" | "trench"
 BACKGROUND = "grid"
@@ -33,15 +35,11 @@ def main(background=BACKGROUND):
     ball.anchor_to_paddle(paddle)
 
     clock = pygame.time.Clock()
-    glow = 0
-    glow_direction = 1
-    v_scroll = 0
-    h_scroll = 0
 
-    state = 'idle'  # 'idle' | 'playing' | 'paused'
-
-    speed_levels = [1, 2, 4, 8, 16]
-    speed_idx = 0
+    state = 'idle'  # 'idle' | 'aiming' | 'playing' | 'paused'
+    speed = SpeedController()
+    aim_angle = 0  # degrees from vertical, -75 (left) to +75 (right)
+    tracker = ScoreTracker()
 
     while True:
         input_handler.process()
@@ -55,35 +53,46 @@ def main(background=BACKGROUND):
                 audio.toggle_pause()
 
         if input_handler.speed_up:
-            speed_idx = min(speed_idx + 1, len(speed_levels) - 1)
+            speed.up()
         if input_handler.speed_down:
-            speed_idx = max(speed_idx - 1, 0)
+            speed.down()
 
         if state == 'paused':
             clock.tick(60)
             continue
 
-        speed = speed_levels[speed_idx]
+        
 
-        # Paddle always at human speed regardless of multiplier
         prev_x = paddle._xLoc
-        paddle.update(input_handler.left, input_handler.right)
-        h_scroll += (paddle._xLoc - prev_x) / -8
+        if state != 'aiming':
+            paddle.update(input_handler.left, input_handler.right)
+        paddle_dx = paddle._xLoc - prev_x
 
-        for _ in range(speed):
+        for _ in range(speed.value):
             if state == 'idle':
                 ball.anchor_to_paddle(paddle)
                 if input_handler.launch:
-                    direction = -1 if input_handler.left else 1
-                    ball.launch(direction)
-                    state = 'playing'
+                    aim_angle = 0
+                    state = 'aiming'
                 break  # always single iteration in idle
+
+            elif state == 'aiming':
+                if input_handler.left:
+                    aim_angle = max(-75, aim_angle - 2)
+                elif input_handler.right:
+                    aim_angle = min(75, aim_angle + 2)
+                ball.anchor_to_paddle(paddle)
+                if input_handler.launch:
+                    ball.launch(aim_angle)
+                    state = 'playing'
+                break  # always single iteration in aiming
 
             elif state == 'playing':
                 # Ball lost below paddle
                 if ball._yLoc - ball._radius > paddle._yLoc + paddle._height:
                     paddle._xLoc = PADDLE_START_X
                     ball.anchor_to_paddle(paddle)
+                    tracker.on_ball_lost()
                     state = 'idle'
                     break
 
@@ -92,28 +101,26 @@ def main(background=BACKGROUND):
                     brick_group = BrickWall(0, 100, 20, 5, BRICK_COLORS)
                     break
 
-                ball.update(brick_group, paddle)
+                events = ball.update(brick_group, paddle)
+                if events['brick_hit']:
+                    tracker.on_brick_hit()
+                if events['paddle_hit']:
+                    tracker.on_paddle_hit()
                 brick_group.update()
 
-        glow += glow_direction
-        if glow > 30 or glow < 0:
-            glow_direction = -glow_direction
-
         renderer.clear()
-        renderer.draw_background(glow, v_scroll, h_scroll)
+        renderer.draw_background(paddle_dx)
         renderer.draw_wall(brick_group)
         renderer.draw_ball(ball)
+        if state == 'aiming':
+            renderer.draw_reticle(ball, aim_angle)
         renderer.draw_paddle(paddle)
         renderer.draw_borders()
-        renderer.draw_speed(speed_levels[speed_idx])
+        renderer.draw_score(tracker.score, tracker.multiplier)
+        renderer.draw_speed(speed.value)
 
         renderer.flip()
         clock.tick(60)
-
-        if v_scroll < 50:
-            v_scroll += 4
-        else:
-            v_scroll = 0
 
 
 def main_trench():

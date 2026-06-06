@@ -2,6 +2,9 @@ import math
 import pygame
 import pygame.gfxdraw
 
+_RETICLE_LENGTH = 80
+_RETICLE_DOT_STEP = 12
+
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 BACKGROUND_COLOR1 = (0, 51, 153)
@@ -23,6 +26,10 @@ class Renderer:
             "trench": self._draw_background_trench,
         }[background]
         self._font = pygame.font.Font(None, 28)
+        self._glow = 0
+        self._glow_dir = 1
+        self._v_scroll = 0
+        self._h_scroll = 0
 
     def clear(self):
         self._screen.fill(BLACK)
@@ -30,6 +37,22 @@ class Renderer:
 
     def flip(self):
         pygame.display.flip()
+
+    def draw_score(self, score, multiplier=1.0):
+        score_str = f'{score:,}'.replace(',', "'")
+        surf = self._font.render(score_str, True, (255, 255, 255))
+        self._screen.blit(surf, (810, 40))
+        if multiplier > 1.0:
+            level = int(multiplier)
+            progress = multiplier - level
+            color = (255, 220, 0) if level < 3 else (255, 100, 50)
+            surf = self._font.render(f'x{level}', True, color)
+            self._screen.blit(surf, (810, 65))
+            bar_x, bar_y, bar_w, bar_h = 810, 84, 50, 5
+            pygame.draw.rect(self._screen, (50, 50, 50), (bar_x, bar_y, bar_w, bar_h))
+            fill = round(bar_w * progress)
+            if fill > 0:
+                pygame.draw.rect(self._screen, color, (bar_x, bar_y, fill, bar_h))
 
     def draw_speed(self, multiplier):
         if multiplier == 1:
@@ -41,14 +64,20 @@ class Renderer:
         pygame.draw.rect(self._screen, WHITE, (0, 0, 802, 800), 1)
         pygame.draw.rect(self._screen, BLACK, (803, 0, 423, 800), 0)
 
-    def draw_background(self, glow, v_scroll, h_scroll):
-        r1 = max(0, min(255, BACKGROUND_COLOR1[0] + glow))
-        g1 = max(0, min(255, BACKGROUND_COLOR1[1] + glow))
-        b1 = max(0, min(255, BACKGROUND_COLOR1[2] + glow))
-        r2 = max(0, min(255, BACKGROUND_COLOR2[0] + glow * 2))
-        g2 = max(0, min(255, BACKGROUND_COLOR2[1] + glow * 2))
-        b2 = max(0, min(255, BACKGROUND_COLOR2[2] + glow * 2))
-        self._draw_background(r1, g1, b1, r2, g2, b2, v_scroll, h_scroll)
+    def draw_background(self, paddle_dx=0):
+        self._glow += self._glow_dir
+        if self._glow > 30 or self._glow < 0:
+            self._glow_dir = -self._glow_dir
+        self._h_scroll += paddle_dx / -8
+        self._v_scroll = 0 if self._v_scroll >= 50 else self._v_scroll + 4
+
+        r1 = max(0, min(255, BACKGROUND_COLOR1[0] + self._glow))
+        g1 = max(0, min(255, BACKGROUND_COLOR1[1] + self._glow))
+        b1 = max(0, min(255, BACKGROUND_COLOR1[2] + self._glow))
+        r2 = max(0, min(255, BACKGROUND_COLOR2[0] + self._glow * 2))
+        g2 = max(0, min(255, BACKGROUND_COLOR2[1] + self._glow * 2))
+        b2 = max(0, min(255, BACKGROUND_COLOR2[2] + self._glow * 2))
+        self._draw_background(r1, g1, b1, r2, g2, b2, self._v_scroll, self._h_scroll)
 
     def _draw_background_grid(self, r1, g1, b1, r2, g2, b2, v_scroll, h_scroll):
         for y in range(16):
@@ -70,6 +99,19 @@ class Renderer:
                 pygame.draw.rect(self._screen, (r2, g2, b2),
                                  (x * 60, -35 - 640 + y * 60 + v_scroll * scroll_speed,
                                   3 * zoom_factor, 3 * zoom_factor), 0)
+
+    def draw_reticle(self, ball, angle_deg):
+        rad = math.radians(angle_deg)
+        dx = math.sin(rad)
+        dy = -math.cos(rad)
+        x0, y0 = ball._xLoc, ball._yLoc
+        steps = _RETICLE_LENGTH // _RETICLE_DOT_STEP
+        for i in range(1, steps + 1):
+            t = i / steps
+            radius = max(1, round(3 * (1 - t * 0.6)))
+            x = int(x0 + dx * i * _RETICLE_DOT_STEP)
+            y = int(y0 + dy * i * _RETICLE_DOT_STEP)
+            pygame.draw.circle(self._screen, (220, 220, 255), (x, y), radius)
 
     def draw_ball(self, ball):
         pygame.draw.circle(self._screen, (128, 128, 128), (ball._xLoc, ball._yLoc), ball._radius, 1)

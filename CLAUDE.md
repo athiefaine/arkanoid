@@ -72,6 +72,7 @@ Tourne à 60 fps (`clock.tick(60)`). Ordre d'exécution par frame :
 
 - Pas de commentaires sauf pour les invariants non évidents ou les TODO actifs
 - Pas de gestion d'erreur sur les chemins internes (faire confiance à pygame)
+- **Aucun module ne dépasse 200 lignes** — indicateur de bonne conception, pas de seuil d'alerte ; la séparation des responsabilités et le faible couplage se pensent dès la conception, pas en réaction à la taille
 - **Mettre à jour `docs/journal.md` à chaque session de travail significative** — résumé des changements, décisions prises, points ouverts
 - **Mettre à jour `docs/todo.md`** quand une tâche est ajoutée, commencée ou terminée
 - **Mettre à jour `README.md`** si la structure, les commandes ou les fonctionnalités changent
